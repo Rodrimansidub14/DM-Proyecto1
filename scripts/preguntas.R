@@ -207,3 +207,126 @@ data_filtered %>%
   )
 
 table(data_filtered$revenue)
+library(ggplot2)
+library(dplyr)
+library(scales)
+
+library(tidyverse)
+library(scales)
+
+# Filtrar y agrupar: calcular el ingreso promedio por género principal.
+genre_revenue <- movies_cleaned %>%
+  filter(!is.na(genre1), genre1 != "",
+         !is.na(revenue), revenue > 0) %>%
+  group_by(genre1) %>%
+  summarise(avg_revenue = mean(revenue, na.rm = TRUE)) %>%
+  ungroup()
+
+# Crear gráfico: Ingresos promedio por género.
+p_revenue <- ggplot(genre_revenue, aes(x = reorder(genre1, avg_revenue), y = avg_revenue)) +
+  geom_col(fill = "blue") +
+  coord_flip() +
+  labs(title = "Ingresos Promedio por Género",
+       x = "Género",
+       y = "Ingresos Promedio (USD)") +
+  scale_y_continuous(labels = dollar_format(scale = 1e-6, suffix = "M"))
+
+print(p_revenue)
+library(tidyverse)
+
+# Filtrar y agrupar: calcular la popularidad promedio por género principal.
+genre_popularity <- movies_cleaned %>%
+  filter(!is.na(genre1), genre1 != "",
+         !is.na(popularity)) %>%
+  group_by(genre1) %>%
+  summarise(avg_popularity = mean(popularity, na.rm = TRUE)) %>%
+  ungroup()
+
+# Crear gráfico: Popularidad promedio por género.
+p_popularity <- ggplot(genre_popularity, aes(x = reorder(genre1, avg_popularity), y = avg_popularity)) +
+  geom_col(fill = "green") +
+  coord_flip() +
+  labs(title = "Popularidad Promedio por Género",
+       x = "Género",
+       y = "Popularidad Promedio")
+
+print(p_popularity)
+library(tidyverse)
+
+# Filtrar y agrupar: calcular la calificación promedio (voteAvg) por género principal.
+genre_rating <- movies_cleaned %>%
+  filter(!is.na(genre1), genre1 != "",
+         !is.na(voteAvg)) %>%
+  group_by(genre1) %>%
+  summarise(avg_rating = mean(voteAvg, na.rm = TRUE)) %>%
+  ungroup()
+
+# Crear gráfico: Calificación promedio por género.
+p_rating <- ggplot(genre_rating, aes(x = reorder(genre1, avg_rating), y = avg_rating)) +
+  geom_col(fill = "purple") +
+  coord_flip() +
+  labs(title = "Calificación Promedio por Género",
+       x = "Género",
+       y = "Calificación Promedio (voteAvg)")
+
+print(p_rating)
+
+library(tidyverse)
+library(scales)
+
+# Definir algunos nombres representativos de grandes estudios (ajusta según corresponda)
+big_studios <- c("Warner Bros.", "Universal Pictures", "Paramount Pictures", 
+                 "Columbia Pictures", "Walt Disney Pictures", "20th Century Fox", "Metro-Goldwyn-Mayer")
+
+# Clasificar cada película según su compañía de producción
+movies_production <- movies_cleaned %>%
+  filter(!is.na(productionCompany)) %>%
+  mutate(tipo_produccion = if_else(str_detect(productionCompany, 
+                                              str_c(big_studios, collapse = "|")), 
+                                   "Grandes Estudios", "Independiente"))
+
+# Filtrar películas con presupuesto válido (> 0)
+movies_budget <- movies_production %>%
+  filter(!is.na(budget), budget > 0)
+
+# Gráfico: Distribución del presupuesto por tipo de producción
+p_budget <- ggplot(movies_budget, aes(x = tipo_produccion, y = budget, fill = tipo_produccion)) +
+  geom_boxplot() +
+  labs(title = "Presupuesto según Tipo de Producción",
+       x = "Tipo de Producción",
+       y = "Presupuesto (USD)") +
+  scale_y_continuous(labels = dollar_format()) +
+  theme_minimal() +
+  guides(fill = FALSE)
+
+print(p_budget)
+# Filtrar películas con ingresos válidos (> 0)
+movies_revenue <- movies_production %>%
+  filter(!is.na(revenue), revenue > 0)
+
+# Gráfico: Distribución de ingresos por tipo de producción
+p_revenue <- ggplot(movies_revenue, aes(x = tipo_produccion, y = revenue, fill = tipo_produccion)) +
+  geom_boxplot() +
+  labs(title = "Ingresos según Tipo de Producción",
+       x = "Tipo de Producción",
+       y = "Ingresos (USD)") +
+  scale_y_continuous(labels = dollar_format(scale = 1e-6, suffix = "M")) +
+  theme_minimal() +
+  guides(fill = FALSE)
+
+print(p_revenue)
+# Filtrar películas con calificaciones válidas
+movies_rating <- movies_production %>%
+  filter(!is.na(voteAvg))
+
+# Gráfico: Distribución de calificaciones (voteAvg) por tipo de producción
+p_rating <- ggplot(movies_rating, aes(x = tipo_produccion, y = voteAvg, fill = tipo_produccion)) +
+  geom_boxplot() +
+  labs(title = "Calificaciones según Tipo de Producción",
+       x = "Tipo de Producción",
+       y = "Calificación Promedio (voteAvg)") +
+  theme_minimal() +
+  guides(fill = FALSE)
+
+print(p_rating)
+
