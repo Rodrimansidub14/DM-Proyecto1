@@ -1,0 +1,240 @@
+
+### Pruebas de Normalidad para Distribución del Presupuesto de las Películas ###
+Shapiro-Wilk Test:
+
+	Shapiro-Wilk normality test
+
+data:  sample_var
+W = 0.57729, p-value < 2.2e-16
+
+Kolmogorov-Smirnov Test:
+
+	Asymptotic one-sample Kolmogorov-Smirnov test
+
+data:  sample_var
+D = 0.30348, p-value < 2.2e-16
+alternative hypothesis: two-sided
+
+Lilliefors Test:
+
+	Lilliefors (Kolmogorov-Smirnov) normality test
+
+data:  sample_var
+D = 0.30348, p-value < 2.2e-16
+
+
+### Pruebas de Normalidad para Distribución de Ingresos de las Películas ###
+Shapiro-Wilk Test:
+
+	Shapiro-Wilk normality test
+
+data:  sample_var
+W = 0.40356, p-value < 2.2e-16
+
+Kolmogorov-Smirnov Test:
+
+	Asymptotic one-sample Kolmogorov-Smirnov test
+
+data:  sample_var
+D = 0.35447, p-value < 2.2e-16
+alternative hypothesis: two-sided
+
+Lilliefors Test:
+
+	Lilliefors (Kolmogorov-Smirnov) normality test
+
+data:  sample_var
+D = 0.35447, p-value < 2.2e-16
+
+
+### Pruebas de Normalidad para Distribución de la Duración de las Películas ###
+Shapiro-Wilk Test:
+
+	Shapiro-Wilk normality test
+
+data:  sample_var
+W = 0.88136, p-value < 2.2e-16
+
+Kolmogorov-Smirnov Test:
+
+	Asymptotic one-sample Kolmogorov-Smirnov test
+
+data:  sample_var
+D = 0.14583, p-value < 2.2e-16
+alternative hypothesis: two-sided
+
+Lilliefors Test:
+
+	Lilliefors (Kolmogorov-Smirnov) normality test
+
+data:  sample_var
+D = 0.14583, p-value < 2.2e-16
+
+
+### Pruebas de Normalidad para Distribución de la Popularidad de las Películas ###
+Shapiro-Wilk Test:
+
+	Shapiro-Wilk normality test
+
+data:  sample_var
+W = 0.13743, p-value < 2.2e-16
+
+Kolmogorov-Smirnov Test:
+
+	Asymptotic one-sample Kolmogorov-Smirnov test
+
+data:  sample_var
+D = 0.40552, p-value < 2.2e-16
+alternative hypothesis: two-sided
+
+Lilliefors Test:
+
+	Lilliefors (Kolmogorov-Smirnov) normality test
+
+data:  sample_var
+D = 0.40552, p-value < 2.2e-16
+
+
+### Pruebas de Normalidad para Distribución de la Calificación Promedio de las Películas ###
+Shapiro-Wilk Test:
+
+	Shapiro-Wilk normality test
+
+data:  sample_var
+W = 0.97961, p-value < 2.2e-16
+
+Kolmogorov-Smirnov Test:
+
+	Asymptotic one-sample Kolmogorov-Smirnov test
+
+data:  sample_var
+D = 0.048347, p-value = 1.411e-10
+alternative hypothesis: two-sided
+
+Lilliefors Test:
+
+	Lilliefors (Kolmogorov-Smirnov) normality test
+
+data:  sample_var
+D = 0.048347, p-value < 2.2e-16
+
+
+### Pruebas de Normalidad para Distribución del Número de Votos de las Películas ###
+Shapiro-Wilk Test:
+
+	Shapiro-Wilk normality test
+
+data:  sample_var
+W = 0.52969, p-value < 2.2e-16
+
+Kolmogorov-Smirnov Test:
+
+	Asymptotic one-sample Kolmogorov-Smirnov test
+
+data:  sample_var
+D = 0.29944, p-value < 2.2e-16
+alternative hypothesis: two-sided
+
+Lilliefors Test:
+
+	Lilliefors (Kolmogorov-Smirnov) normality test
+
+data:  sample_var
+D = 0.29944, p-value < 2.2e-16
+
+
+### Pruebas de Normalidad para Distribución de la Cantidad de Géneros por Película ###
+Shapiro-Wilk Test:
+
+	Shapiro-Wilk normality test
+
+data:  sample_var
+W = 0.89958, p-value < 2.2e-16
+
+Kolmogorov-Smirnov Test:
+
+	Asymptotic one-sample Kolmogorov-Smirnov test
+
+data:  sample_var
+D = 0.18211, p-value < 2.2e-16
+alternative hypothesis: two-sided
+
+Lilliefors Test:
+
+	Lilliefors (Kolmogorov-Smirnov) normality test
+
+data:  sample_var
+D = 0.18211, p-value < 2.2e-16
+
+
+### Pruebas de Normalidad para Distribución de la Cantidad de Actores por Película ###
+Shapiro-Wilk Test:
+
+	Shapiro-Wilk normality test
+
+data:  sample_var
+W = 0.033339, p-value < 2.2e-16
+
+Kolmogorov-Smirnov Test:
+
+	Asymptotic one-sample Kolmogorov-Smirnov test
+
+data:  sample_var
+D = 0.51764, p-value < 2.2e-16
+alternative hypothesis: two-sided
+
+Lilliefors Test:
+
+	Lilliefors (Kolmogorov-Smirnov) normality test
+
+data:  sample_var
+D = 0.51764, p-value < 2.2e-16
+
+
+### Pruebas de Normalidad para Distribución de la Cantidad de Actrices por Película ###
+Shapiro-Wilk Test:
+
+	Shapiro-Wilk normality test
+
+data:  sample_var
+W = 0.0030158, p-value < 2.2e-16
+
+Kolmogorov-Smirnov Test:
+
+	Asymptotic one-sample Kolmogorov-Smirnov test
+
+data:  sample_var
+D = 0.50544, p-value < 2.2e-16
+alternative hypothesis: two-sided
+
+Lilliefors Test:
+
+	Lilliefors (Kolmogorov-Smirnov) normality test
+
+data:  sample_var
+D = 0.50544, p-value < 2.2e-16
+
+
+### Pruebas de Normalidad para Distribución de la Cantidad de Actores Masculinos por Película ###
+Shapiro-Wilk Test:
+
+	Shapiro-Wilk normality test
+
+data:  sample_var
+W = 0.0030158, p-value < 2.2e-16
+
+Kolmogorov-Smirnov Test:
+
+	Asymptotic one-sample Kolmogorov-Smirnov test
+
+data:  sample_var
+D = 0.50544, p-value < 2.2e-16
+alternative hypothesis: two-sided
+
+Lilliefors Test:
+
+	Lilliefors (Kolmogorov-Smirnov) normality test
+
+data:  sample_var
+D = 0.50544, p-value < 2.2e-16
+
