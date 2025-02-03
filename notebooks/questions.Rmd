@@ -1,37 +1,23 @@
 ---
----
----
-
-------------------------------------------------------------------------
-
-title: "Preguntas" 
-author: "Rodrigo Mansilla" 
+title: "Preguntas"
+author: "Rodrigo Mansilla"
 date: "2025-02-03"
-output: word_document: 
-toc: true number_sections: true 
+output: pdf_document
 ---
 
 # Pregunta 4.2: ¿Cuáles son las 10 películas que más ingresos tuvieron?
 
-```{r 1, echo=FALSE}
-# Filtrar: Excluir películas sin ingresos (revenue NA o 0)
+```{r pressure, echo=FALSE}
 movies_top10 <- movies_cleaned %>%
-  filter(!is.na(revenue), revenue > 0) %>%  # Excluir NA y revenue 0
-  arrange(desc(revenue)) %>%                # Ordenar de mayor a menor según "revenue"
-  head(10) %>%                            # Seleccionar las 10 películas con más ingresos
-  arrange(revenue)                        # Reordenar de menor a mayor para el gráfico
+  arrange(desc(revenue)) %>%  # Ordena de mayor a menor según "revenue"
+  head(10) %>%                # Selecciona las 10 primeras películas
+  arrange(revenue)            # Reordena de menor a mayor para el gráfico
 
-# Seleccionar y mostrar las columnas relevantes:
-# En este caso se muestran 'title', 'revenue', 'director' y 'releaseDate'
-movies_top10_relevant <- movies_top10 %>%
-  select(title, revenue, director, releaseDate)
-
-# Imprimir el subconjunto de datos con las columnas relevantes
-movies_top10_relevant
-
+# Mostrar el subconjunto de datos
+movies_top10
 ```
 
-```{r 1.2, echo=FALSE}
+```{r pressure, echo=FALSE}
 ggplot(movies_top10, aes(x = revenue, y = reorder(title, revenue))) +
   geom_bar(stat = "identity", fill = "skyblue") +
   labs(title = "Top 10 películas por ingresos",
@@ -42,7 +28,7 @@ ggplot(movies_top10, aes(x = revenue, y = reorder(title, revenue))) +
 
 # 4.4. (3 puntos) ¿Cuál es la peor película de acuerdo a los votos de todos los usuarios?
 
-```{r 2, echo=TRUE, message=FALSE, warning=FALSE, fig.width=8, fig.height=5}
+```{r pregunta-4-4, echo=TRUE, message=FALSE, warning=FALSE, fig.width=8, fig.height=5}
 
 # Identificar la peor película según la calificación promedio (voteAvg)
 peor_pelicula <- movies_cleaned %>%
@@ -90,7 +76,7 @@ print(genre_counts)
 
 ## Gráfico de barras horizontal para visualizar la distribución de géneros
 
-```{r 3, echo=FALSE}
+```{r pressure, echo=FALSE}
 ggplot(genre_counts, aes(x = reorder(genre1, n), y = n, fill = genre1)) +
   geom_bar(stat = "identity") +
   labs(title = "Distribución del género principal en las 20 películas más recientes",
@@ -102,7 +88,7 @@ ggplot(genre_counts, aes(x = reorder(genre1, n), y = n, fill = genre1)) +
 
 ## Contar la frecuencia del género principal en estas películas
 
-```{r 3.2, echo=FALSE}
+```{r pressure, echo=FALSE}
 # Seleccionar las 10 películas más largas, excluyendo filas con NA en runtime y genre1
 long_movies <- movies_cleaned %>%
   filter(!is.na(runtime), !is.na(genre1)) %>%
@@ -131,7 +117,7 @@ print(final_table)
 
 # Gráfico de barras horizontal para las 10 películas más largas
 
-```{r 3.3, echo=FALSE}
+```{r pressure, echo=FALSE}
 ggplot(genre_counts_long, aes(x = reorder(genre1, n), y = n, fill = genre1)) +
   geom_bar(stat = "identity") +
   labs(title = "Género principal de las 10 películas más largas",
@@ -147,7 +133,7 @@ ggplot(genre_counts_long, aes(x = reorder(genre1, n), y = n, fill = genre1)) +
 
 ## 4.8. (3 puntos) ¿La cantidad de actores influye en los ingresos de las películas?
 
-```{r 4, echo=FALSE}
+```{r pressure, echo=FALSE}
 # Filtrar los datos, excluyendo NA, ingresos cero y actores extremos
 data_filtered <- movies_cleaned %>%
   filter(!is.na(actorsAmount), !is.na(revenue), revenue > 0)
@@ -176,7 +162,7 @@ ggplot(data_filtered, aes(x = actorsAmount, y = revenue)) +
 
 ##¿se han hecho películas con más actores en los últimos años?
 
-```{r 5, echo=FALSE}
+```{r pressure, echo=FALSE}
 library(tidyverse)
 library(lubridate)
 
@@ -217,7 +203,7 @@ ggplot(actors_by_year, aes(x = year, y = avg_actors)) +
 
 4.10. (8 puntos) ¿Quiénes son los directores que hicieron las 20 películas mejor calificadas?
 
-```{r 6, echo=FALSE}
+```{r pressure, echo=FALSE}
 
 
 # Seleccionar las 20 películas mejor calificadas, excluyendo NA y directores "Desconocido"
@@ -252,7 +238,7 @@ print(top20_table)
 
 ¿cuantas películas, en promedio, se han lanzado por mes?
 
-```{r 7, echo=FALSE}
+```{r pressure, echo=FALSE}
 
 # Filtrar y transformar los datos: extraer el mes y agrupar para calcular ingresos promedio y totales
 movies_by_month <- movies_cleaned %>%
@@ -282,7 +268,7 @@ ggplot(movies_by_month, aes(x = month, y = avg_revenue)) +
 
 ## ¿Cuántas películas, en promedio, se han lanzado por mes?
 
-```{r 8, echo=FALSE}
+```{r pressure, echo=FALSE}
 
 # Extraer el mes de releaseDate y contar la cantidad de películas por mes
 movies_count_by_month <- movies_cleaned %>%
@@ -312,7 +298,7 @@ ggplot(movies_count_by_month, aes(x = month, y = count)) +
 
 ## 4.14. (7 puntos) ¿Cómo se correlacionan las calificaciones con el éxito comercial?
 
-```{r 9, echo=FALSE, warning=FALSE}
+```{r pressure, echo=FALSE, warning=FALSE}
 library(scales)
 
 # Filtrar los datos: excluir películas con revenue = 0 y valores NA en voteAvg o revenue
@@ -337,57 +323,25 @@ ggplot(data_filtered, aes(x = voteAvg, y = revenue)) +
 
 ## 4.15. (5 puntos) ¿Qué estrategias de marketing, como videos promocionales o páginas oficiales, generan mejores resultados?
 
-```{r 10, echo=FALSE, warning=FALSE}
-library(tidyverse)
+```{r pressure, echo=FALSE, warning=FALSE}
 library(scales)
-library(gridExtra)
 
-# Filtrar datos: solo películas con ingresos relevantes (revenue > 0)
-data_marketing <- movies_cleaned %>%
-  filter(!is.na(revenue), revenue > 0)
+# Filtrar los datos: excluir películas con revenue = 0 y valores NA en voteAvg o revenue
+data_filtered <- movies_cleaned %>%
+  filter(!is.na(voteAvg), !is.na(revenue), revenue > 0)
 
-# Crear variables indicadoras:
-# - 'has_homepage': "Con Página Oficial" si homePage no es NA ni cadena vacía, y "Sin Página Oficial" en caso contrario.
-# - 'has_video': "Con Video Promocional" si la variable video es TRUE, y "Sin Video Promocional" si es FALSE.
-data_marketing <- data_marketing %>%
-  mutate(
-    has_homepage = if_else(is.na(homePage) | homePage == "", "Sin Página Oficial", "Con Página Oficial"),
-    has_video = if_else(video, "Con Video Promocional", "Sin Video Promocional")
-  )
+# Calcular el coeficiente de correlación de Pearson entre voteAvg y revenue
+correlation <- cor(data_filtered$voteAvg, data_filtered$revenue, method = "pearson")
 
-# Resumen de ingresos por estrategia de página oficial
-summary_homepage <- data_marketing %>%
-  group_by(has_homepage) %>%
-  summarise(
-    avg_revenue = mean(revenue, na.rm = TRUE),
-    median_revenue = median(revenue, na.rm = TRUE),
-    n = n()
-  )
-print("Resumen de ingresos según Página Oficial:")
-print(summary_homepage)
-```
-
-```{r 11, echo=FALSE, warning=FALSE}
-library(gridExtra)
-
-# Resumen de ingresos por estrategia de video promocional
-summary_video <- data_marketing %>%
-  group_by(has_video) %>%
-  summarise(
-    avg_revenue = mean(revenue, na.rm = TRUE),
-    median_revenue = median(revenue, na.rm = TRUE),
-    n = n()
-  )
-print("Resumen de ingresos según Video Promocional:")
-print(summary_video)
-
-# Gráfico 1: Distribución de ingresos según presencia de Página Oficial
-p1 <- ggplot(data_marketing, aes(x = has_homepage, y = revenue, fill = has_homepage)) +
-  geom_boxplot() +
-  labs(title = "Ingresos según Estrategia: Página Oficial",
-       x = "Estrategia de Página Oficial",
+# Crear el gráfico de dispersión con línea de regresión
+ggplot(data_filtered, aes(x = voteAvg, y = revenue)) +
+  geom_point(alpha = 0.5, color = "darkblue") +
+  geom_smooth(method = "lm", se = FALSE, color = "red") +
+  labs(title = "Correlación entre calificaciones y éxito comercial",
+       subtitle = paste("Coeficiente de correlación (Pearson):", round(correlation, 3)),
+       x = "Calificación promedio (voteAvg)",
        y = "Ingresos (revenue)") +
   scale_y_continuous(labels = dollar_format(scale = 1e-6, suffix = "M")) +
-  theme_minimal() +
-  theme(legend.position = "none")
+  theme_minimal()
+
 ```
