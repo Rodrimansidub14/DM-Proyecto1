@@ -1,0 +1,54 @@
+---
+title: "clustering"
+author: "Rodrigo Mansilla"
+date: "2025-02-12"
+output: word_document
+---
+
+# 1. Clustering
+
+------------------------------------------------------------------------
+
+### 1. 2 Preprocesamiento
+
+------------------------------------------------------------------------
+
+### 1.2.3 Variables No Relevantes
+
+------------------------------------------------------------------------
+
+Las variables a eliminar son aquellas que no permiten establecer relacuiones cuantitativas o probabilisticas con la estructura del grupo. Dentro de las variables que no aportan al analisis de clusters se encuentran los siguientes:
+
+**Identificadores y Titulos**
+
+-   ***id***: No contiene información descriptiva para agrupar
+
+-   ***originalTitle y title***: Son textos que no contribuyen a la discriminación cuantitativa
+
+**Información de URLs y Nombres**
+
+-   ***homePage*** : Al ser un url, es irrelevante para la segmentación
+
+-   ***productionCompany*** : Es texto con muchos niveles, por lo que aporta poco al perfil númerico.
+
+**Datos textuales de Personas**
+
+-   ***director,actors, y actorsCharacter***: es información que no se puede usar en el clustering sin alguna transformación.
+
+**Variables de Géneros**
+
+-   ***genre1,2,3,4,5*** : Esta información se resume en *genresAmount*, tomando en cuenta solo la cantidad de géneros.
+
+### 1.2.4 Variables Relevantes
+
+------------------------------------------------------------------------
+
+Se mantienen las variables que capturan el perfil cuantitativo de la película y se generan variables derivadas que sintetizan información similar, reduciendo redundancia. A continuación se detalla las variables relevantes al estudio.
+
+**Variables númericas**
+
+-   ***popularity, budget, revenue, runtime,voteCount,voteAvg***: Son indicadores de rendimiento , finanzas y aceptación.
+
+-   ***genresAmount***: Número de generos que caracterizan la película.
+
+-   

@@ -1,0 +1,685 @@
+---
+title: "Preguntas"
+author: "Rodrigo Mansilla"
+date: "2025-02-03"
+output: pdf_document
+---
+
+# Pregunta 4.2: ¿Cuáles son las 10 películas que más ingresos tuvieron?
+
+```{r pressure, echo=FALSE}
+movies_top10 <- movies_cleaned %>%
+  arrange(desc(revenue)) %>%  # Ordena de mayor a menor según "revenue"
+  head(10) %>%                # Selecciona las 10 primeras películas
+  arrange(revenue)            # Reordena de menor a mayor para el gráfico
+
+# Mostrar el subconjunto de datos
+movies_top10
+```
+
+```{r pressure, echo=FALSE}
+ggplot(movies_top10, aes(x = revenue, y = reorder(title, revenue))) +
+  geom_bar(stat = "identity", fill = "skyblue") +
+  labs(title = "Top 10 películas por ingresos",
+       x = "Ingresos",
+       y = "Película") +
+  theme_minimal()
+```
+
+# 4.4. (3 puntos) ¿Cuál es la peor película de acuerdo a los votos de todos los usuarios?
+
+```{r pregunta-4-4, echo=TRUE, message=FALSE, warning=FALSE, fig.width=8, fig.height=5}
+
+# Identificar la peor película según la calificación promedio (voteAvg)
+peor_pelicula <- movies_cleaned %>%
+  arrange(voteAvg) %>%  # Ordena de menor a mayor según voteAvg
+  head(1)               # Selecciona la película con la calificación más baja
+
+# Mostrar la peor película
+print(peor_pelicula)
+
+# Calcular la calificación promedio de todas las películas
+calificacion_media <- mean(movies_cleaned$voteAvg, na.rm = TRUE)
+
+# Crear un data frame para la visualización
+df_votos <- data.frame(
+  Categoria = c("Peor Película", "Promedio del Conjunto"),
+  Calificacion = c(peor_pelicula$voteAvg, calificacion_media)
+)
+
+# Generar el gráfico de barras
+ggplot(df_votos, aes(x = Categoria, y = Calificacion, fill = Categoria)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Comparación de Calificaciones: Peor Película vs Promedio",
+       x = "Categoría",
+       y = "Calificación Promedio") +
+  theme_minimal() +
+  scale_fill_manual(values = c("Peor Película" = "tomato", "Promedio del Conjunto" = "steelblue"))
+```
+
+# 4.6. (9 puntos) ¿Cuál es el género principal de las 20 películas más recientes? ¿Cuál es el género
+
+```{r pressure, echo=FALSE}
+# Filtrar las 20 películas más recientes excluyendo valores NA en genre1
+movies_recent_20 <- movies_cleaned %>%
+  filter(!is.na(genre1)) %>%   # Excluir NAs en la columna genre1
+  arrange(desc(releaseDate)) %>%
+  head(20)
+
+# Contar la frecuencia de cada género principal
+genre_counts <- movies_recent_20 %>%
+  count(genre1, sort = TRUE)
+
+# Mostrar la tabla de frecuencias de géneros
+print(genre_counts)
+```
+
+## Gráfico de barras horizontal para visualizar la distribución de géneros
+
+```{r pressure, echo=FALSE}
+ggplot(genre_counts, aes(x = reorder(genre1, n), y = n, fill = genre1)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Distribución del género principal en las 20 películas más recientes",
+       x = "Género principal",
+       y = "Cantidad de películas") +
+  coord_flip() +
+  theme_minimal()
+```
+
+## Contar la frecuencia del género principal en estas películas
+
+```{r pressure, echo=FALSE}
+# Seleccionar las 10 películas más largas, excluyendo filas con NA en runtime y genre1
+long_movies <- movies_cleaned %>%
+  filter(!is.na(runtime), !is.na(genre1)) %>%
+  arrange(desc(runtime)) %>%
+  head(10)
+
+# Contar la frecuencia de cada género principal en estas películas
+genre_counts_long <- long_movies %>%
+  count(genre1, sort = TRUE)
+
+# Calcular el runtime (minutos) promedio por género en las películas largas
+avg_runtime_long <- long_movies %>%
+  group_by(genre1) %>%
+  summarise(avg_runtime = mean(runtime))
+
+# Unir la tabla de frecuencias con el runtime promedio
+final_table <- left_join(genre_counts_long, avg_runtime_long, by = "genre1")
+
+# Mostrar la tabla final con la frecuencia y el runtime promedio por género
+print(final_table)
+
+
+
+
+```
+
+# Gráfico de barras horizontal para las 10 películas más largas
+
+```{r pressure, echo=FALSE}
+ggplot(genre_counts_long, aes(x = reorder(genre1, n), y = n, fill = genre1)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Género principal de las 10 películas más largas",
+       x = "Género principal",
+       y = "Cantidad de películas") +
+  coord_flip() +
+  theme_minimal()
+
+
+
+
+```
+
+## 4.8. (3 puntos) ¿La cantidad de actores influye en los ingresos de las películas?
+
+```{r pressure, echo=FALSE}
+# Filtrar los datos, excluyendo NA, ingresos cero y actores extremos
+data_filtered <- movies_cleaned %>%
+  filter(!is.na(actorsAmount), !is.na(revenue), revenue > 0)
+
+# Determinar el percentil 99 de actorsAmount para eliminar outliers extremos
+threshold <- quantile(data_filtered$actorsAmount, 0.99)
+data_filtered <- data_filtered %>%
+  filter(actorsAmount <= threshold)
+
+# Calcular el coeficiente de correlación de Pearson con los datos filtrados
+correlation <- cor(data_filtered$actorsAmount, data_filtered$revenue, method = "pearson")
+
+# Crear el gráfico de dispersión con la línea de regresión
+ggplot(data_filtered, aes(x = actorsAmount, y = revenue)) +
+  geom_point(alpha = 0.5, color = "darkred") +
+  geom_smooth(method = "lm", se = FALSE, color = "blue") +
+  # Mostrar los ingresos en millones para mayor legibilidad
+  scale_y_continuous(labels = scales::dollar_format(scale = 1e-6, suffix = "M")) +
+  labs(title = "Relación entre cantidad de actores y ingresos (filtrado de outliers)",
+       subtitle = paste("Coeficiente de correlación (Pearson):", round(correlation, 3)),
+       x = "Cantidad de actores",
+       y = "Ingresos (millones)") +
+  theme_minimal()
+
+```
+
+##¿se han hecho películas con más actores en los últimos años?
+
+```{r pressure, echo=FALSE}
+library(tidyverse)
+library(lubridate)
+
+# Filtrar datos: excluir NA en actorsAmount y releaseDate, ingresos cero (opcional) y outliers extremos en actorsAmount
+data_year <- movies_cleaned %>%
+  filter(!is.na(actorsAmount), !is.na(releaseDate), actorsAmount > 0)
+
+# Calcular el percentil 99 de actorsAmount para eliminar outliers extremos
+threshold <- quantile(data_year$actorsAmount, 0.99)
+data_year <- data_year %>%
+  filter(actorsAmount <= threshold)
+
+# Extraer el año de releaseDate
+data_year <- data_year %>%
+  mutate(year = year(releaseDate))
+
+# Agrupar por año y calcular la cantidad promedio de actores (además de la mediana si se desea)
+actors_by_year <- data_year %>%
+  group_by(year) %>%
+  summarise(avg_actors = mean(actorsAmount),
+            median_actors = median(actorsAmount),
+            total_movies = n())
+
+# Mostrar la tabla resultante (opcional)
+print(actors_by_year)
+
+# Crear un gráfico de líneas que muestra la evolución de la cantidad promedio de actores por año
+ggplot(actors_by_year, aes(x = year, y = avg_actors)) +
+  geom_line(color = "steelblue", size = 1) +
+  geom_point(color = "darkred", size = 2) +
+  labs(title = "Evolución en la cantidad de actores en películas a lo largo de los años",
+       x = "Año",
+       y = "Cantidad promedio de actores") +
+  theme_minimal()
+
+
+```
+
+4.10. (8 puntos) ¿Quiénes son los directores que hicieron las 20 películas mejor calificadas?
+
+```{r pressure, echo=FALSE}
+
+
+# Seleccionar las 20 películas mejor calificadas, excluyendo NA en voteAvg y directores "Desconocido"
+top20_movies <- movies_cleaned %>%
+  filter(!is.na(voteAvg)) %>%                             # Excluir NA en voteAvg
+  arrange(desc(voteAvg)) %>%                              # Ordenar de mayor a menor según voteAvg
+  head(20) %>%                                          # Seleccionar las 20 películas mejor calificadas
+  filter(!str_detect(director, regex("desconocido", ignore_case = TRUE)))  # Excluir directores "Desconocido"
+
+# Separar películas con múltiples directores y generar una tabla con Director, Título y Calificación
+top20_table <- top20_movies %>%
+  mutate(director = str_split(director, "\\|")) %>%       # Separar directores concatenados con "|"
+  unnest(director) %>%                                    # Expandir a una fila por cada director
+  mutate(director = trimws(director)) %>%                 # Eliminar espacios en blanco extras
+  select(Director = director, Título = title, Calificación = voteAvg) %>%  # Seleccionar columnas relevantes
+  arrange(desc(Calificación))                             # Ordenar de mayor a menor según la calificación
+
+# Imprimir la tabla resultante en la consola
+print(top20_table)
+
+# (Opcional) Para una impresión formateada en HTML o PDF, se puede usar knitr::kable()
+knitr::kable(top20_table, caption = "Directores, Películas y Calificación de las 20 mejores películas")
+
+
+
+
+```
+
+## 4.12. (5 puntos) ¿Se asocian ciertos meses de lanzamiento con mejores ingresos?
+
+¿cuantas películas, en promedio, se han lanzado por mes?
+
+```{r pressure, echo=FALSE}
+
+# Filtrar y transformar los datos: extraer el mes y agrupar para calcular ingresos promedio y totales
+movies_by_month <- movies_cleaned %>%
+  filter(!is.na(releaseDate), !is.na(revenue), revenue > 0) %>%  # Excluir NA y películas con revenue 0
+  mutate(month = month(releaseDate, label = TRUE)) %>%          # Extraer el mes (formato abreviado)
+  group_by(month) %>%
+  summarise(
+    avg_revenue = mean(revenue, na.rm = TRUE),
+    total_revenue = sum(revenue, na.rm = TRUE),
+    count = n()
+  ) %>%
+  ungroup()
+
+# Mostrar la tabla resultante
+print(movies_by_month)
+
+# Gráfico: Promedio de ingresos por mes (mostrando los ingresos en millones)
+ggplot(movies_by_month, aes(x = month, y = avg_revenue)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  labs(title = "Promedio de ingresos por mes de lanzamiento",
+       x = "Mes de lanzamiento",
+       y = "Ingresos promedio (millones)") +
+  scale_y_continuous(labels = scales::dollar_format(scale = 1e-6, suffix = "M")) +
+  theme_minimal()
+
+```
+
+## ¿Cuántas películas, en promedio, se han lanzado por mes?
+
+```{r pressure, echo=FALSE}
+
+# Extraer el mes de releaseDate y contar la cantidad de películas por mes
+movies_count_by_month <- movies_cleaned %>%
+  filter(!is.na(releaseDate)) %>%
+  mutate(month = month(releaseDate, label = TRUE)) %>%
+  group_by(month) %>%
+  summarise(count = n()) %>%
+  ungroup()
+
+# Mostrar la tabla con la cantidad de películas por mes
+print(movies_count_by_month)
+
+# Calcular el promedio de películas lanzadas por mes
+average_movies_per_month <- mean(movies_count_by_month$count)
+cat("El promedio de películas lanzadas por mes es:", round(average_movies_per_month, 2), "\n")
+
+# Gráfico: Cantidad de películas lanzadas por mes
+ggplot(movies_count_by_month, aes(x = month, y = count)) +
+  geom_bar(stat = "identity", fill = "darkgreen") +
+  labs(title = "Cantidad de películas lanzadas por mes",
+       x = "Mes de lanzamiento",
+       y = "Número de películas") +
+  theme_minimal()
+
+
+```
+
+## 4.14. (7 puntos) ¿Cómo se correlacionan las calificaciones con el éxito comercial?
+
+```{r pressure, echo=FALSE, warning=FALSE}
+library(scales)
+
+# Filtrar los datos: excluir películas con revenue = 0 y valores NA en voteAvg o revenue
+data_filtered <- movies_cleaned %>%
+  filter(!is.na(voteAvg), !is.na(revenue), revenue > 0)
+
+# Calcular el coeficiente de correlación de Pearson entre voteAvg y revenue
+correlation <- cor(data_filtered$voteAvg, data_filtered$revenue, method = "pearson")
+
+# Crear el gráfico de dispersión con línea de regresión
+ggplot(data_filtered, aes(x = voteAvg, y = revenue)) +
+  geom_point(alpha = 0.5, color = "darkblue") +
+  geom_smooth(method = "lm", se = FALSE, color = "red") +
+  labs(title = "Correlación entre calificaciones y éxito comercial",
+       subtitle = paste("Coeficiente de correlación (Pearson):", round(correlation, 3)),
+       x = "Calificación promedio (voteAvg)",
+       y = "Ingresos (revenue)") +
+  scale_y_continuous(labels = dollar_format(scale = 1e-6, suffix = "M")) +
+  theme_minimal()
+
+```
+
+## 4.15. (5 puntos) ¿Qué estrategias de marketing, como videos promocionales o páginas oficiales, generan mejores resultados?
+
+```{r pressure, echo=FALSE, warning=FALSE}
+library(tidyverse)
+library(scales)
+
+### ANÁLISIS DE VIDEOS PROMOCIONALES
+
+# Paso 1: Agrupar los datos y definir el grupo de video.
+# Se filtran películas con revenue > 0 y se descartan registros faltantes en popularity y voteAvg.
+video_metrics <- movies_cleaned %>%
+  filter(!is.na(video),
+         !is.na(revenue), revenue > 0,
+         !is.na(popularity),
+         !is.na(voteAvg)) %>%
+  mutate(estrategia_video = if_else(video, "Con Video", "Sin Video")) %>%
+  group_by(estrategia_video) %>%
+  summarise(
+    avg_popularity = mean(popularity),
+    avg_revenue = mean(revenue),
+    avg_voteAvg = mean(voteAvg)
+  ) %>%
+  ungroup()
+
+# Visualización 1: Gráfico de barras para comparar las métricas entre los grupos de video
+video_metrics_long <- video_metrics %>%
+  pivot_longer(cols = c(avg_popularity, avg_revenue, avg_voteAvg),
+               names_to = "Metrica", values_to = "Valor")
+
+ggplot(video_metrics_long, aes(x = estrategia_video, y = Valor, fill = estrategia_video)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  facet_wrap(~ Metrica, scales = "free_y") +
+  scale_y_continuous(labels = function(x){
+    # Formatea revenue en millones, las otras métricas se dejan sin transformar
+    if(max(x, na.rm = TRUE) > 1e8) { dollar_format(scale = 1e-6, suffix = "M")(x) } else { x }
+  }) +
+  labs(title = "Métricas clave según estrategia de Video Promocional",
+       x = "Estrategia de Video", y = "Valor promedio") +
+  theme_minimal() +
+  guides(fill = FALSE)
+
+### ANÁLISIS DE PÁGINAS OFICIALES
+
+# Paso 1: Agrupar los datos y definir el grupo de página oficial.
+homepage_metrics <- movies_cleaned %>%
+  filter(!is.na(revenue), revenue > 0,
+         !is.na(popularity),
+         !is.na(voteAvg)) %>%
+  mutate(estrategia_homepage = if_else(!is.na(homePage) & homePage != "", "Con HomePage", "Sin HomePage")) %>%
+  group_by(estrategia_homepage) %>%
+  summarise(
+    avg_popularity = mean(popularity),
+    avg_revenue = mean(revenue),
+    avg_voteAvg = mean(voteAvg)
+  ) %>%
+  ungroup()
+
+# Visualización 2: Gráfico de barras para comparar las métricas entre los grupos de página oficial
+homepage_metrics_long <- homepage_metrics %>%
+  pivot_longer(cols = c(avg_popularity, avg_revenue, avg_voteAvg),
+               names_to = "Metrica", values_to = "Valor")
+
+ggplot(homepage_metrics_long, aes(x = estrategia_homepage, y = Valor, fill = estrategia_homepage)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  facet_wrap(~ Metrica, scales = "free_y") +
+  scale_y_continuous(labels = function(x){
+    if(max(x, na.rm = TRUE) > 1e8) { dollar_format(scale = 1e-6, suffix = "M")(x) } else { x }
+  }) +
+  labs(title = "Métricas clave según presencia de Página Oficial",
+       x = "Estrategia de Página Oficial", y = "Valor promedio") +
+  theme_minimal() +
+  guides(fill = FALSE)
+
+```
+```{r pressure, echo=FALSE, warning=FALSE}
+library(ggridges)
+
+# Otra opción gráfica: Distribución de ingresos usando un gráfico de ridgeline
+p_ridges <- ggplot(movies_marketing_filtered, aes(x = revenue, y = has_video, fill = has_video)) +
+  geom_density_ridges(alpha = 0.6, scale = 1, rel_min_height = 0.01) +
+  scale_x_continuous(labels = scales::dollar_format(scale = 1e-6, suffix = "M")) +
+  labs(title = "Distribución de ingresos según estrategia de Video Promocional (Ingresos > 75th Percentil)",
+       x = "Ingresos (millones)",
+       y = "Video Promocional") +
+  theme_minimal() +
+  guides(fill = FALSE)
+
+p_ridges
+
+
+```
+1.	¿De qué países provienen las películas del dataset y cuál es la distribución de producción por país?
+```{r pressure, echo=FALSE, warning=FALSE}
+
+library(tidyverse)
+library(scales)
+
+# Filtrar las películas que tengan información válida en 'productionCountry'
+movies_by_country <- movies_cleaned %>%
+  filter(!is.na(productionCountry), productionCountry != "") %>%
+  count(productionCountry, sort = TRUE)
+
+# Limitar a los top 10 países con más películas
+top_countries <- movies_by_country %>%
+  top_n(10, n)
+
+# Crear un gráfico de barras horizontal mejorado
+ggplot(top_countries, aes(x = reorder(productionCountry, n), y = n)) +
+  geom_bar(stat = "identity", fill = "steelblue", alpha = 0.8) +  # Color y transparencia
+  geom_text(aes(label = n), hjust = -0.2, size = 2.5, color = "black") +  # Etiquetas de valores
+  labs(
+    title = "Top 10 Países con Mayor Producción de Películas",
+    subtitle = "Distribución de películas por país de producción",
+    x = "País de Producción",
+    y = "Número de Películas"
+  ) +
+  coord_flip() +  # Barras horizontales
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 9, face = "bold", hjust = -0.5),
+    plot.subtitle = element_text(size = 12, hjust = 0.5),
+    axis.text.y = element_text(size = 8),
+    axis.title = element_text(size = 14)
+  ) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.1)))  # Ajustar el espacio en el eje Y
+```
+
+2.	¿Cómo han variado los presupuestos de las películas a lo largo de los años?
+
+
+```{r pressure, echo=FALSE, warning=FALSE}
+library(tidyverse)
+library(lubridate)
+library(scales)
+
+# Filtrar películas con información válida en presupuesto y fecha de lanzamiento,
+# y eliminar presupuestos cero (ya que pueden distorsionar el análisis)
+movies_budget <- movies_cleaned %>%
+  filter(!is.na(budget), budget > 0, !is.na(releaseDate))
+
+# Extraer el año de releaseDate y agrupar por año para calcular métricas de presupuesto
+movies_budget_by_year <- movies_budget %>%
+  mutate(year = year(releaseDate)) %>%
+  group_by(year) %>%
+  summarise(
+    avg_budget = mean(budget, na.rm = TRUE),
+    median_budget = median(budget, na.rm = TRUE),
+    count = n()
+  ) %>%
+  ungroup()
+
+# Mostrar la tabla resumen de presupuestos por año
+print(movies_budget_by_year)
+
+# Gráfico de líneas para visualizar la evolución del presupuesto promedio a lo largo de los años
+ggplot(movies_budget_by_year, aes(x = year, y = avg_budget)) +
+  geom_line(color = "blue", size = 1) +
+  geom_point(color = "darkblue", size = 2) +
+  labs(title = "Evolución de los Presupuestos a lo largo de los Años",
+       subtitle = "Presupuesto Promedio por Año",
+       x = "Año",
+       y = "Presupuesto Promedio (dólares)") +
+  scale_y_continuous(labels = dollar_format()) +
+  theme_minimal()
+
+```
+---
+title: "Análisis de Películas por Idioma"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libraries}
+# Cargar librerías necesarias
+library(tidyverse)
+library(scales)
+library(viridis)
+library(ggrepel)
+library(patchwork)
+```
+
+```{r data_preparation}
+# Preparar los datos
+movies_language <- movies_cleaned %>%
+  filter(!is.na(originalLanguage), 
+         !is.na(revenue), 
+         revenue > 0, 
+         !is.na(popularity), 
+         !is.na(voteAvg))
+```
+
+```{r scatter_plot}
+# 1. Gráfico de dispersión con tres métricas
+scatter_plot <- movies_language %>%
+  group_by(originalLanguage) %>%
+  filter(n() >= 20) %>%
+  summarise(
+    avg_revenue = mean(revenue, na.rm = TRUE) / 1e6,
+    avg_popularity = mean(popularity, na.rm = TRUE),
+    avg_voteAvg = mean(voteAvg, na.rm = TRUE),
+    count = n()
+  ) %>%
+  ggplot(aes(x = avg_popularity, y = avg_revenue, 
+             size = count, color = avg_voteAvg)) +
+  geom_point(alpha = 0.7) +
+  geom_text_repel(aes(label = originalLanguage), size = 
+                    3) +
+  scale_size_continuous(range = c(3, 10)) +
+  scale_color_viridis() +
+  labs(
+    title = "Ingresos, Popularidad,Calificaciones por Idioma",
+    x = "Popularidad ",
+    y = "Ingresos  (Millones)",
+    size = "peliculas",
+    color = "Calificación"
+  ) +
+  theme_minimal()
+
+scatter_plot
+```
+
+
+```{r stacked_plot}
+# 4. Gráfico de barras apiladas al 100%
+stacked_plot <- movies_language %>%
+  mutate(revenue_cat = cut(revenue, 
+                          breaks = quantile(revenue, probs = seq(0, 1, 0.25)),
+                          labels = c("Bajo", "Medio-Bajo", "Medio-Alto", "Alto"))) %>%
+  filter(originalLanguage %in% (
+    movies_language %>%
+      count(originalLanguage) %>%
+      filter(n >= 20) %>%
+      pull(originalLanguage)
+  )) %>%
+  ggplot(aes(x = originalLanguage, fill = revenue_cat)) +
+  geom_bar(position = "fill") +
+  coord_flip() +
+  scale_fill_viridis_d() +
+  labs(
+    title = "Distribución de Categorías de Ingresos por Idioma",
+    x = "Idioma Original",
+    y = "Proporción",
+    fill = "Nivel de\nIngresos"
+  ) +
+  theme_minimal()
+
+stacked_plot
+```
+
+```{r combined_plots}
+# Combinar los gráficos
+(scatter_plot + violin_plot) / (heatmap_plot + stacked_plot)
+```
+```{r pressure, echo=FALSE, warning=FALSE}
+library(tidyverse)
+library(ggrepel)
+
+# Agrupar por director y calcular la cantidad de películas y la popularidad promedio
+director_popularity <- movies_cleaned %>%
+  filter(!is.na(director), !is.na(popularity)) %>%
+  mutate(director = str_split(director, "\\|")) %>%
+  unnest(director) %>%
+  mutate(director = trimws(director)) %>%
+  filter(!str_detect(director, regex("desconocido", ignore_case = TRUE))) %>%
+  group_by(director) %>%
+  summarise(
+    count_movies = n(),
+    avg_popularity = mean(popularity, na.rm = TRUE)
+  ) %>%
+  ungroup()
+
+# Filtrar para analizar solo aquellos directores con al menos 5 películas
+director_popularity_filtered <- director_popularity %>%
+  filter(count_movies >= 5)
+
+# Gráfico: Número de películas vs. Popularidad promedio
+ggplot(director_popularity_filtered, aes(x = count_movies, y = avg_popularity)) +
+  geom_point(color = "darkgreen", size = 2, alpha = 0.7) +
+  geom_smooth(method = "lm", se = FALSE, color = "blue") +
+  geom_text_repel(aes(label = director), size = 3, max.overlaps = 7) +
+  labs(title = "Director vs. Promedio de Popularidad",
+       x = "Número de Películas",
+       y = "Popularidad Promedio") +
+  theme_minimal()
+
+```
+
+```{r setup, include=FALSE}
+
+
+
+
+```
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(scales)
+
+# Filtrar y agrupar: calcular el ingreso promedio por género principal.
+genre_revenue <- movies_cleaned %>%
+  filter(!is.na(genre1), genre1 != "",
+         !is.na(revenue), revenue > 0) %>%
+  group_by(genre1) %>%
+  summarise(avg_revenue = mean(revenue, na.rm = TRUE)) %>%
+  ungroup()
+
+# Crear gráfico: Ingresos promedio por género.
+p_revenue <- ggplot(genre_revenue, aes(x = reorder(genre1, avg_revenue), y = avg_revenue)) +
+  geom_col(fill = "blue") +
+  coord_flip() +
+  labs(title = "Ingresos Promedio por Género",
+       x = "Género",
+       y = "Ingresos Promedio (USD)") +
+  scale_y_continuous(labels = dollar_format(scale = 1e-6, suffix = "M"))
+
+print(p_revenue)
+
+
+
+```
+
+
+```{r setup}
+genre_popularity <- movies_cleaned %>%
+  filter(!is.na(genre1), genre1 != "",
+         !is.na(popularity)) %>%
+  group_by(genre1) %>%
+  summarise(avg_popularity = mean(popularity, na.rm = TRUE)) %>%
+  ungroup()
+
+ggplot(genre_popularity, aes(x = reorder(genre1, avg_popularity), y = avg_popularity)) +
+  geom_col(fill = "green") +
+  coord_flip() +
+  labs(title = "Popularidad Promedio por Género",
+       x = "Género",
+       y = "Popularidad Promedio")
+
+
+```
+
+
+
+
+```{r setup, include=FALSE}
+
+genre_rating <- movies_cleaned %>%
+  filter(!is.na(genre1), genre1 != "",
+         !is.na(voteAvg)) %>%
+  group_by(genre1) %>%
+  summarise(avg_rating = mean(voteAvg, na.rm = TRUE)) %>%
+  ungroup()
+
+ggplot(genre_rating, aes(x = reorder(genre1, avg_rating), y = avg_rating)) +
+  geom_col(fill = "purple") +
+  coord_flip() +
+  labs(title = "Calificación Promedio por Género",
+       x = "Género",
+       y = "Calificación Promedio (voteAvg)")
+
+```
+

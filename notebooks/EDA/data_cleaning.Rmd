@@ -1,0 +1,141 @@
+---
+title: "Limpieza de Datos - Proyecto CineVision Studios"
+author: "Equipo de Análisis de Datos"
+date: "r Sys.Date()"
+output: html_document
+---
+
+# Introducción
+
+Este documento describe el proceso de limpieza de datos realizado para el **Proyecto CineVision Studios**. Se utilizó R para importar, explorar y limpiar el conjunto de datos de películas, asegurando que esté listo para el análisis exploratorio y el modelado posterior.
+
+{r setup, include=FALSE}
+library(tidyverse)
+library(lubridate)
+library(stringr)
+
+
+# 1. Carga de Datos
+
+Se importa el conjunto de datos original desde un archivo CSV.
+
+{r load_data}
+movies_df <- tryCatch(
+    {
+        read_csv(
+            file = "data/movies.csv",
+            locale = locale(encoding = "UTF-8"),
+            show_col_types = FALSE
+        )
+    },
+    error = function(e) {
+        message("Error al leer el archivo CSV: ", e$message)
+        NULL
+    }
+)
+
+if (is.null(movies_df)) {
+    stop("No se pudo importar el dataset. Verifique el archivo y reintente.")
+}
+print(head(movies_df))
+
+
+
+# 2. Exploración Inicial de los Datos
+
+Se revisa la estructura y un resumen estadístico de los datos.
+
+{r initial_checks}
+message("Revisión Inicial de los Datos:")
+print(dim(movies_df))
+print(glimpse(movies_df))
+print(summary(movies_df))
+
+
+# 3. Manejo de Duplicados
+
+{r handle_duplicates}
+movies_df <- distinct(movies_df)
+print(nrow(movies_df))
+
+
+# 4. Manejo de Valores Faltantes
+
+Se reemplazan valores nulos en las columnas clave.
+
+{r handle_missing_values}
+movies_df <- movies_df %>%
+    mutate(
+        director = replace_na(director, "Desconocido"),
+        productionCountry = replace_na(productionCountry, "Desconocido"),
+        castWomenAmount = as.numeric(str_replace_all(castWomenAmount, "[^0-9]", "")),
+        castMenAmount = as.numeric(str_replace_all(castMenAmount, "[^0-9]", "")),
+        castWomenAmount = replace_na(castWomenAmount, 0),
+        castMenAmount = replace_na(castMenAmount, 0)
+    )
+print(summary(movies_df))
+
+
+# 5. Conversión y Limpieza de Columnas Problemáticas
+
+{r clean_columns}
+movies_df <- movies_df %>%
+    mutate(
+        releaseDate = as.Date(releaseDate, format = "%Y-%m-%d"),
+        video = as.logical(video),
+        budget = if_else(budget > 500000000, NA_real_, budget),
+        revenue = if_else(revenue < 0, NA_real_, revenue),
+        runtime = if_else(runtime > 400, NA_real_, runtime)
+    )
+print(summary(movies_df))
+
+
+# 6. Separación de Datos en Columnas
+
+Se separan valores compuestos como géneros y popularidad de actores.
+
+{r split_columns}
+movies_df <- movies_df %>%
+    separate(genres, into = c("genre1", "genre2", "genre3"), sep = "\\|", extra = "merge", fill = "right") %>%
+    mutate(
+        actorsPopularity = str_replace_all(actorsPopularity, "[^0-9\\|\\.]", "")
+    ) %>%
+    separate(
+        actorsPopularity,
+        into = c("actorPopularity1", "actorPopularity2", "actorPopularity3", "actorPopularity4", "actorPopularity5"),
+        sep = "\\|",
+        extra = "drop",
+        fill = "right"
+    ) %>%
+    mutate(across(starts_with("actorPopularity"), as.numeric)) %>%
+    mutate(across(starts_with("actorPopularity"), ~replace_na(., median(., na.rm = TRUE))))
+print(head(movies_df))
+
+
+# 7. Eliminación de Caracteres No Imprimibles
+
+{r clean_text}
+movies_df <- movies_df %>%
+    mutate(across(where(is.character), ~ str_replace_all(., "[^[:print:]]", "")))
+print(head(movies_df))
+
+
+# 8. Filtrado de Valores Extremos
+
+{r filter_extreme_values}
+movies_df <- movies_df %>% filter(runtime <= 400 | is.na(runtime))
+print(summary(movies_df))
+
+
+# 9. Revisión Final y Exportación
+
+{r final_checks}
+message("Revisión Post-Limpieza:")
+print(summary(movies_df))
+write_csv(movies_df, "data/movies_cleaned.csv")
+message("Limpieza de datos completada. El archivo 'movies_cleaned.csv' ha sido guardado.")
+
+
+# Conclusión
+
+Este cuaderno documenta la limpieza de datos aplicada al conjunto de películas de CineVision Studios. Ahora el dataset está preparado para análisis exploratorio y modelado.
