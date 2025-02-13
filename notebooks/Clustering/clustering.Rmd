@@ -5,17 +5,22 @@ date: "2025-02-12"
 output: word_document
 ---
 
+```{r setup}
+library(tidyverse)
+library(knitr)
+library(kableExtra)
+
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+
+```
+
 # 1. Clustering
 
-------------------------------------------------------------------------
-
-### 1. 2 Preprocesamiento
+## 1.2 Análisis de Variables
 
 ------------------------------------------------------------------------
 
-### 1.2.3 Variables No Relevantes
-
-------------------------------------------------------------------------
+### 1.2.1 Variables No Relevantes
 
 Las variables a eliminar son aquellas que no permiten establecer relacuiones cuantitativas o probabilisticas con la estructura del grupo. Dentro de las variables que no aportan al analisis de clusters se encuentran los siguientes:
 
@@ -41,8 +46,6 @@ Las variables a eliminar son aquellas que no permiten establecer relacuiones cua
 
 ### 1.2.4 Variables Relevantes
 
-------------------------------------------------------------------------
-
 Se mantienen las variables que capturan el perfil cuantitativo de la película y se generan variables derivadas que sintetizan información similar, reduciendo redundancia. A continuación se detalla las variables relevantes al estudio.
 
 **Variables númericas**
@@ -51,4 +54,207 @@ Se mantienen las variables que capturan el perfil cuantitativo de la película y
 
 -   ***genresAmount***: Número de generos que caracterizan la película.
 
--   
+-   ***productionCoAmount, productionCountriesAmount***: Participación de compañías y países.
+
+#### Variables Procesadas:
+
+-   $releaseDate\rightarrow releaseYear$ **:** Se asume que el año de estreno puede influir en el comportamiento
+
+-   ***actorPopularity:*** Se calcula la popularidad promedio del elenco para sintetizar las variables de popuaridad.
+
+#### Variables a considerar:
+
+-   ***originalLanguafe,video, productionCompanyCountry, productionCountry***: Pese a ser cualitativas, se pueden transformar si es que aportan al perfil posteriormente.
+
+## 1.3 Pre-procesamiento:
+
+------------------------------------------------------------------------
+
+### 1.3.1 Objetivos
+
+-   **Eliminar variables irrelevantes:**\
+    Se descartan columnas identificativas o textuales que no aportan información cuantitativa (p. ej., *id*, *originalTitle*, *title*, *homePage*, *productionCompany*, *genres*, *director*, *actors*, *actorsCharacter*).
+
+-   **Limpiar columnas numéricas problemáticas:**
+
+-   **Imputar valores faltantes:**\
+    Reemplazar los NA en las variables numéricas relevantes usando la mediana.
+
+-   **Escalar variables numéricas:**\
+    Aplicar normalización (Z-score) para homogeneizar la escala de las variables usadas en el clustering para comparar y combinar las variables de forma equitativa.
+
+### 1.3.2 Metodología
+
+#### 1.3.2.1 Dataset Original:
+
+```{r initconfig echo = FALSE warning = FALSE}
+
+# Lectura del dataset original
+movies <- read.csv("C:/Users/rodri/Documents/Data-Mining/Proyecto 1/data/movies.csv", 
+                  stringsAsFactors = FALSE)
+
+# Análisis de valores faltantes
+original_na <- colSums(is.na(movies))
+original_summary <- tibble(
+  Variable = names(movies),
+  `Valores NA` = original_na
+)
+
+# Dimensiones del dataset
+cat(sprintf("Dimensiones del dataset original: %d observaciones × %d variables\n\n", 
+    nrow(movies), ncol(movies)))
+
+# Tabla de valores faltantes con formato mejorado
+kable(original_summary,
+      caption = "Tabla 1: Análisis de Valores Faltantes en el Dataset Original",
+      col.names = c("Variable", "Cantidad de NA"),
+      align = c('l', 'r'),
+      digits = 0,
+      format.args = list(big.mark = ","))%>%
+kable_styling(bootstrap_options = c("striped", "hover"))
+```
+
+#### 1.3.2.2 Dataset Preprocesado:
+
+```{r prerpocs echo = FALSE warning = FALSE}
+# Lectura del dataset preprocesado
+movies_clean_scaled <- read.csv("C:/Users/rodri/Documents/Data-Mining/Proyecto 1/data/movies_clean_scaled.csv",
+                              stringsAsFactors = FALSE)
+
+# Análisis de valores faltantes en datos preprocesados
+preprocessed_na <- colSums(is.na(movies_clean_scaled))
+preprocessed_summary <- tibble(
+  Variable = names(movies_clean_scaled),
+  `Valores NA` = preprocessed_na
+)
+
+# Dimensiones del dataset preprocesado
+cat(sprintf("Dimensiones del dataset preprocesado: %d observaciones × %d variables\n\n",
+    nrow(movies_clean_scaled), ncol(movies_clean_scaled)))
+
+# Tabla de valores faltantes con formato mejorado
+kable(preprocessed_summary,
+      caption = "Tabla 2: Análisis de Valores Faltantes en el Dataset Preprocesado",
+      col.names = c("Variable", "Cantidad de NA"),
+      align = c('l', 'r'),
+      digits = 0,
+      format.args = list(big.mark = ","))%>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
+
+```
+
+#### 1.3.2.3 Variables numericas de reparto :
+
+```{r comparison echo = FALSE warning = FALSE}
+# Crear resumen estadístico detallado
+cast_summary <- movies_clean_scaled %>%
+  select(castWomenAmount, castMenAmount, actorsPopularity) %>%
+  summarise(
+    across(everything(), list(
+      Min = ~min(., na.rm = TRUE),
+      Q1 = ~quantile(., 0.25, na.rm = TRUE),
+      Mediana = ~median(., na.rm = TRUE),
+      Media = ~mean(., na.rm = TRUE),
+      Q3 = ~quantile(., 0.75, na.rm = TRUE),
+      Max = ~max(., na.rm = TRUE),
+      DE = ~sd(., na.rm = TRUE)
+    ))
+  ) %>%
+  pivot_longer(everything(), 
+               names_to = c("Variable", "Estadístico"),
+               names_pattern = "(.+)_(.+)") %>%
+  pivot_wider(names_from = Variable,
+              values_from = value)
+
+# Crear tabla con formato mejorado
+kable(cast_summary,
+      caption = "Tabla 3: Análisis Estadístico de las Variables del Reparto",
+      col.names = c("Estadístico", 
+                    "Cantidad de Mujeres", 
+                    "Cantidad de Hombres", 
+                    "Popularidad del Reparto"),
+      align = c('l', 'r', 'r', 'r'),
+      digits = 2,
+      format.args = list(big.mark = ","))%>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
+
+```
+
+#### 1.3.2.4 Transformaciones de Fecha:
+
+```{r date echo = FALSE warning = FALSE}
+# Crear resumen estadístico del año de lanzamiento
+release_summary <- movies_clean %>%
+  select(releaseYear) %>%
+  summarise(
+    Mínimo = min(releaseYear, na.rm = TRUE),
+    `Primer Cuartil` = quantile(releaseYear, 0.25, na.rm = TRUE),
+    Mediana = median(releaseYear, na.rm = TRUE),
+    Media = mean(releaseYear, na.rm = TRUE),
+    `Tercer Cuartil` = quantile(releaseYear, 0.75, na.rm = TRUE),
+    Máximo = max(releaseYear, na.rm = TRUE),
+    `Desviación Estándar` = sd(releaseYear, na.rm = TRUE)
+  ) %>%
+  pivot_longer(everything(), 
+               names_to = "Estadístico",
+               values_to = "Valor")
+
+# Crear tabla con formato mejorado
+kable(release_summary,
+      caption = "Tabla 4: Análisis Estadístico del Año de Lanzamiento",
+      col.names = c("Estadístico", "Año"),
+      align = c('l', 'r'),
+      digits = 2,
+      format.args = list(big.mark = ","))%>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
+
+```
+
+#### 1.3.2.5 Comparaciones finales:
+
+```{r Dimens  echo = FALSE warning = FALSE}
+comparison <- tibble(
+  Dataset = c("Original", "Preprocesado"),
+  Observaciones = c(nrow(movies), nrow(movies_clean)),
+  Variables = c(ncol(movies), ncol(movies_clean))
+)
+kable(comparison, caption = "Comparación de dimensiones: dataset original vs preprocesado")%>%
+  kable_styling(bootstrap_options = c("striped", "hover"))%>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
+
+
+```
+
+### 1.4 Formación de Grupos
+
+Los grupos para el analisis se formaran con las siguientes variables, dado que estan escaladas, no poseen valores faltantes y permiten que cada dimensión tenga el mismo peso ,evitando que variables con rangos mayores dominen las medidas de similitud. Se mantienen variables categoricas para complementar sin embargo no se usaran directamente en el algoritmo de clustering.
+
+-   **budget**: Presupuesto de la película.
+
+-   **revenue**: Ingresos generados por la película.
+
+-   **runtime**: Duración de la película.
+
+-   **popularity**: Índice de popularidad.
+
+-   **voteAvg**: Promedio de votos.
+
+-   **voteCount**: Cantidad de votos.
+
+-   **genresAmount**: Número de géneros asignados a la película.
+
+-   **productionCoAmount**: Cantidad de compañías productoras involucradas.
+
+-   **productionCountriesAmount**: Cantidad de países en los que se produjo la película.
+
+-   **actorsPopularity**: Promedio de la popularidad del elenco.
+
+-   **actorsAmount**: Cantidad de actores.
+
+-   **releaseYear**: Año de estreno (extraído de *releaseDate*).
+
+### 1.5 Tendencia al Agrupamiento
+
+#### 1.5.1 Estadístico de Hopkins
+
+#### 1.5.2 VAT(Visual Assessment of cluster Tendency)

@@ -1,3 +1,4 @@
+# Cargar librerías necesarias
 library(tidyverse)
 library(lubridate)
 library(stringr)
@@ -30,69 +31,37 @@ movies_clean <- movies_clean %>%
     productionCountry = as.factor(productionCountry)
   )
 
-# 5. Limpieza de columnas numéricas problemáticas
-# Función para limpiar y convertir a numérico
+# 5. Funciones de limpieza
 clean_numeric <- function(x) {
-  cleaned <- str_replace_all(x, "[^0-9\\.\\-]", "")  # Elimina todo salvo dígitos, punto y signo menos
-  cleaned[cleaned == ""] <- NA                        # Si quedó cadena vacía, se asigna NA
+  if(is.numeric(x)) return(x)
+  cleaned <- str_replace_all(x, "[^0-9\\.\\-]", "")
+  cleaned[cleaned == ""] <- NA
   as.numeric(cleaned)
 }
 
-# Función para procesar actorsPopularity
 clean_actorsPopularity <- function(x) {
   parts <- unlist(strsplit(x, "\\|"))
   parts <- str_trim(parts)
   parts <- str_replace_all(parts, "[^0-9\\.\\-]", "")
   parts[parts == ""] <- NA
   nums <- as.numeric(parts)
-  nums <- nums[!is.na(nums)]
-  if(length(nums) == 0) return(NA) else return(mean(nums))
+  if(all(is.na(nums))) return(NA)
+  mean(nums, na.rm = TRUE)
 }
 
-# Supongamos que ya tenemos movies_clean tras la selección de variables y transformación de fechas:
-movies_clean <- movies %>% 
-  select(-id, -originalTitle, -title, -homePage, -productionCompany, -genres, -director, -actors, -actorsCharacter) %>% 
-  mutate(releaseDate = as.Date(releaseDate, format = "%Y-%m-%d"),
-         releaseYear = year(releaseDate)) %>% 
-  select(-releaseDate) %>% 
-  mutate(
-    originalLanguage = as.factor(originalLanguage),
-    video = as.factor(video),
-    productionCompanyCountry = as.factor(productionCompanyCountry),
-    productionCountry = as.factor(productionCountry)
-  )
-
-# Aplicar la limpieza :
+# 6. Aplicar limpieza a columnas problemáticas
 movies_clean <- movies_clean %>% 
   mutate(
     castWomenAmount = clean_numeric(castWomenAmount),
     castMenAmount   = clean_numeric(castMenAmount),
-    actorsPopularity = sapply(actorsPopularity, clean_actorsPopularity)
+    actorsPopularity = sapply(as.character(actorsPopularity), clean_actorsPopularity)
   )
-
-# Verificamos los NA resultantes
-cat("Valores faltantes después de la limpieza:\n")
-print(colSums(is.na(movies_clean)))
-# Limpiar 'castWomenAmount' y 'castMenAmount': quitar espacios y convertir a numérico
-movies_clean <- movies_clean %>% 
-  mutate(
-    castWomenAmount = as.numeric(trimws(castWomenAmount)),
-    castMenAmount   = as.numeric(trimws(castMenAmount))
-  )
-sapply(movies_clean[c("castWomenAmount", "castMenAmount")], class)
-
-# Procesar 'actorsPopularity': convertir cadena separada por "|" en promedio numérico
-movies_clean <- movies_clean %>% 
-  mutate(actorsPopularity = sapply(as.character(actorsPopularity), function(x) {
-    nums <- as.numeric(unlist(strsplit(x, "\\|")))
-    mean(nums, na.rm = TRUE)
-  }))
 
 
 cat("Valores faltantes después de la limpieza:\n")
-print(colSums(is.na(movies_clean)))
+print(colSums(movies_clean[sapply(movies_clean, is.numeric)]))
 
-# 6. Imputación de NA en variables numéricas usando la mediana
+# 7. Imputación de NA en variables numéricas usando la mediana
 num_vars <- c("popularity", "budget", "revenue", "runtime", "genresAmount",
               "productionCoAmount", "productionCountriesAmount", "voteCount",
               "voteAvg", "actorsPopularity", "actorsAmount", "castWomenAmount",
@@ -101,17 +70,21 @@ num_vars <- c("popularity", "budget", "revenue", "runtime", "genresAmount",
 movies_clean <- movies_clean %>% 
   mutate(across(all_of(num_vars), ~ ifelse(is.na(.), median(., na.rm = TRUE), .)))
 
-# Eliminar filas que aún tengan NA (por seguridad)
+# 8. Eliminar filas que aún tengan NA (por seguridad)
 movies_clean <- na.omit(movies_clean)
 
-# 7. Escalado de variables numéricas (normalización Z-score)
+# 9. Escalado de variables numéricas (normalización Z-score)
 movies_clean[num_vars] <- scale(movies_clean[num_vars])
 
-# 8. Guardar el dataset preprocesado
+# 10. Descartar las variables que no aportan discriminación
+movies_clean <- movies_clean %>% select(-castWomenAmount, -castMenAmount)
+
+# 11. Guardar el dataset preprocesado
 write.csv(movies_clean, "./data/movies_clean_scaled.csv", row.names = FALSE)
 
-movies_clean_scaled <- read.csv("./data/movies_clean_scaled.csv")
-cat("Estructura del dataset original:\n")
+# Verificar la estructura final
+movies_clean_scaled <- read.csv("./data/movies_clean_scaled.csv", stringsAsFactors = FALSE)
+cat("Estructura del dataset preprocesado:\n")
 str(movies_clean_scaled)
-cat("Resumen del dataset original:\n")
+cat("Resumen del dataset preprocesado:\n")
 summary(movies_clean_scaled)
