@@ -232,39 +232,53 @@ plot(silkm, cex.names = 0.25, col = 1:7, main = " Silueta - Muestra fija")
 
 
 #' ## Clustering Jerárquico
+#' ###Calcular la matriz de distancias
 ```{r}
 # Calcular la matriz de distancias
 datos_dist <- dist(df_numeric, method = "euclidean")
 
 # Realizar el agrupamiento jerárquico
 hc <- hclust(datos_dist, method = "ward.D2")
+```
+#' ### Visualizar el dendrograma
+```{r} 
 
-# Visualizar el dendrograma
 plot(hc, main = "Dendrograma - Clustering Jerarquico", xlab = "", sub = "", cex = 0.6)
 rect.hclust(hc, k = 4, border = "red")
+```
+#' ### Visualizar el dendrograma
+```{r}
 fviz_dend(hc, k = 4, rect = TRUE, cex = 0.5)
-
-# Cortar el dendrograma para asignar grupos
+```
+#' ### Cortar el dendrograma para asignar grupos
+```{r} 
+# Cortar el dendrograma para asignar grupos y mostrar resumen
 groups_hc <- cutree(hc, k = 4)
 movies_clean_transformed$grupo_hc <- groups_hc
+print(table(movies_clean_transformed$grupo_hc))
+print(aggregate(df_numeric, by = list(grupo_hc = groups_hc), FUN = mean))
 
-# Mostrar la tabla de frecuencias de los grupos
-table(movies_clean_transformed$grupo_hc)
-
-# Calcular la media por grupo
-aggregate(df_numeric, by = list(grupo_hc = groups_hc), FUN = mean)
-
+```
+#'  ### Visualizar el dendrograma horizontal
+`fviz_dend(hc, k = 4, horiz = TRUE, cex = 0.5)
+```{r}
 # Visualizar el dendrograma horizontal
 fviz_dend(hc, k = 4, horiz = TRUE, cex = 0.5)
 
-# Dendrograma radial
+```
+#' ### Dendrograma radial
+```{r} 
 set.seed(123)
 fviz_dend(hc, k = 4, cex = 0.4, type = "circular", color_labels_by_k = TRUE)
+```
+#' ### Dendrograma filogenético
 
-# Dendrograma filogenético
+```{r}
 fviz_dend(hc, k = 4, cex = 0.7, type = "phylogenic", color_labels_by_k = TRUE, repel = TRUE)
+```
 
-# Evaluar la calidad del agrupamiento usando el método de la silueta
+#' ### Análisis de la Silueta
+```{r}
 silhc <- silhouette(groups_hc, datos_dist)
 sil_promedio_hc <- mean(silhc[, 3])
 cat("Silhouette promedio (Clustering Jerarquico):", sil_promedio_hc, "\n")
