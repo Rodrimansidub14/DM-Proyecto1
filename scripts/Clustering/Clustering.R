@@ -1,4 +1,4 @@
-# Cargar librerías necesarias
+#librerías necesarias
 library(tidyverse)      # Manipulación de datos y piping
 library(hopkins)        # Estadístico de Hopkins
 library(fpc)            # Funciones de clustering
@@ -191,25 +191,130 @@ ggpairs(df_plot2, aes(color = grupo),
 
 
 ## 2. Calcular la importancia de variables
-# Entrenar el modelo kcca directamente
-# Aplicar clustering k-means
+# =============================
+# 1. CARDINALIDAD VS. MAGNITUD
+# =============================
+m <- data.frame(
+  withinss = km$withinss,
+  size     = km$size,
+  cluster  = factor(seq_along(km$size))  # Identifica cada cluster
+)
+
+library(ggplot2)
+library(ggrepel)
+
+ggplot(m, aes(x = size, y = withinss)) +
+  geom_point(size = 3) +
+  geom_smooth(method = "lm", se = TRUE, color = "blue") +
+  geom_text_repel(aes(label = cluster), color = "black") +
+  labs(
+    x = "Cardinalidad (size)",
+    y = "Magnitud (withinss)",
+    title = "Cardinalidad vs. Magnitud de los Clusters"
+  ) +
+  theme_minimal()
+
+# =============================
+# 2. GRÁFICOS DE PARES CON GGPAIRS
+# =============================
+library(GGally)
+
+# Asegurarse de que la variable de grupo sea factor
+movies_clean_transformed$grupo <- as.factor(movies_clean_transformed$grupo)
+
+# Crear subconjunto para el primer grupo de variables
+df_plot1 <- movies_clean_transformed[, c("budget_log", "revenue_log", "popularity_log", "grupo")]
+ggpairs(df_plot1, aes(color = grupo), progress = FALSE) +
+  ggtitle("Gráfico de Pares - Grupo 1")
+
+# Crear subconjunto para el segundo grupo de variables
+df_plot2 <- movies_clean_transformed[, c("voteAvg", "actorsPopularity", "runtime", "grupo")]
+ggpairs(df_plot2, aes(color = grupo), progress = FALSE) +
+  ggtitle("Gráfico de Pares - Grupo 2")
+
+# =============================
+
+## Metodo de la silueta K-means
+# Definir un tamaño de muestra fijo
+# Asegurar reproducibilidad
 set.seed(123)
-res_kcca <- kcca(as.matrix(df_numeric), k = 4, family = kccaFamily("kmeans"))
 
-# Obtener los centroides
-centroids <- centers(res_kcca)
+# Tomar muestra del conjunto de datos
+n_sample <- 85
+df_sample <- df_numeric %>% sample_n(n_sample)
 
-# Calcular la dispersión de cada característica dentro de los clusters
-feature_importance <- apply(centroids, 2, function(x) var(x))
+# Aplicar k-means sobre la muestra
+km <- kmeans(df_sample, centers = 4, iter.max = 100, nstart = 25)
 
-# Ordenar por importancia
-feature_importance <- sort(feature_importance, decreasing = TRUE)
+# Crear la visualización
+# Asegurar reproducibilidad
+set.seed(123)
 
-print(feature_importance)
-# Gráfico de barras por cluster
-barplot(res_kcca, bycluster = TRUE, main = "Distribución de Variables por Cluster (kcca)")
-############################################
-## 3. Gráfico de barras por cluster
-############################################
-barplot(res_kcca, bycluster = TRUE,
-        main = "Distribución de Variables por Cluster (kcca)")
+# Tomar muestra del conjunto de datos
+n_sample <- 85
+df_sample <- df_numeric %>% sample_n(n_sample)
+
+# Aplicar k-means sobre la muestra
+km <- kmeans(df_sample, centers = 4, iter.max = 100, nstart = 25)
+
+# Calcular la silueta para el modelo k-means en la muestra
+library(cluster)
+silkm <- silhouette(km$cluster, dist(df_sample))
+silhouette_promedio <- mean(silkm[, 3])
+cat("Silhouette promedio:", silhouette_promedio, "\n")
+
+# Graficar el análisis de la silueta
+plot(silkm, cex.names = 0.8, col = 1:6, main = "Análisis de la Silueta - Muestra fija")
+
+
+
+
+### Clustering Jerarquico. 
+
+
+# Calcular la matriz de distancias
+### Clustering Jerárquico
+
+# 1. Calcular la matriz de distancias (usando la muestra ya seleccionada)
+# Usamos la métrica Euclidiana
+datos_dist <- dist(df_sample, method = "euclidean")
+
+# 2. Realizar el agrupamiento jerárquico
+# Se utiliza el método "ward.D2" para minimizar la varianza intra-grupo
+hc <- hclust(datos_dist, method = "ward.D2")
+
+# 3. Visualizar el dendrograma
+plot(hc, main = "Dendrograma - Clustering Jerárquico", xlab = "", sub = "", cex = 0.6)
+# Dibujar el corte en el dendrograma (por ejemplo, para 3 grupos)
+rect.hclust(hc, k = 4, border = "red")
+fviz_dend(hc, k = 4, rect = TRUE, cex = 0.5)
+
+# 4. Cortar el dendrograma para asignar cada observación a un grupo
+groups_hc <- cutree(hc, k = 4)
+# Agregar la asignación de grupos al dataset de la muestra
+df_sample$grupo_hc <- groups_hc
+# Mostrar la tabla de frecuencias de los grupos
+table(df_sample$grupo_hc)
+# media de cada grupo
+aggregate(df_sample, by = list(grupo_hc = groups_hc), FUN = mean)
+fviz_dend(hc, k = 4, horiz = TRUE, cex = 0.5)
+
+#dendograma radial
+set.seed(123)
+fviz_dend(hc, k = 4, cex = 0.4, type = "circular", color_labels_by_k = TRUE)
+
+## dendograma filogenetico
+
+fviz_dend(hc, k = 4, cex = 0.7, type = "phylogenic", color_labels_by_k = TRUE,repel = T)
+
+
+##grupo más cohesivo
+
+# 5. Evaluar la calidad del agrupamiento usando el método de la silueta
+library(cluster)
+silhc <- silhouette(groups_hc, datos_dist)
+sil_promedio_hc <- mean(silhc[, 3])
+cat("Silhouette promedio (Clustering Jerárquico):", sil_promedio_hc, "\n")
+
+# 6. Visualizar el análisis de la silueta
+plot(silhc, main = "Análisis de la Silueta - Clustering Jerárquico", cex.names = 0.8, col = 1:3)

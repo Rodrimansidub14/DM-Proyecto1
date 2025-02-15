@@ -1,0 +1,281 @@
+#' ---
+#' title: "Clustering Analysis"
+#' author: "Rodrigo Mansilla"
+#' date: "2025-02-12"
+#' output: html_document
+#' encoding: UTF-8
+
+#' ---
+
+#' ## Cargar librerías necesarias
+```{r setup, include=FALSE}
+library(tidyverse)      # Manipulación de datos y piping
+library(tidyverse)
+library(hopkins)
+library(fpc)
+library(factoextra)
+library(parallelDist)
+library(ggrepel)
+library(GGally)
+library(flexclust)
+library(data.table)
+library(dplyr)
+library(cluster)
+library(ggplot2)
+
+# Cargar el dataset preprocesado
+movies_clean_transformed <- read.csv("C:/Users/rodri/Documents/Data-Mining/Proyecto 1/data/movies_clean_transformed.csv", 
+                                     stringsAsFactors = FALSE)
+``` 
+
+#' ## Estructura del dataset
+```{r}
+str(movies_clean_transformed)
+summary(movies_clean_transformed)
+```
+
+#' ## Selección de Variables Relevantes
+```{r}
+df_numeric <- movies_clean_transformed %>% 
+  select(budget_log, revenue_log, popularity_log, voteAvg, actorsPopularity, runtime, releaseYear)
+```
+
+#' ## Estadístico de Hopkins
+```{r}
+set.seed(123)
+n_sample <- min(1120, nrow(df_numeric))
+df_sample_hopkins <- df_numeric %>% sample_n(n_sample)
+hopkins_stat_sample <- hopkins(df_sample_hopkins)
+cat("Estadístico de Hopkins (muestra):", sprintf("%.20f", hopkins_stat_sample), "\n")
+```
+
+
+#' ## VAT
+
+
+```{r}
+# Seleccionar la muestra y calcular la matriz de distancias Euclidianas
+n_sample <- 1120  
+df_sample <- df_numeric %>% sample_n(n_sample)
+df_sample_matrix <- as.matrix(df_sample)
+
+# Calcular la matriz de distancias (objeto de clase "dist")
+datos_dist_sample <- dist(df_sample_matrix, method = "euclidean")
+
+# Convertir a matriz para normalizar
+mat_dist <- as.matrix(datos_dist_sample)
+
+# Normalización Min-Max
+mat_norm <- (mat_dist - min(mat_dist)) / (max(mat_dist) - min(mat_dist))
+
+# Convertir la matriz normalizada de nuevo a objeto "dist"
+datos_dist_sample_norm <- as.dist(mat_norm)
+
+# Verificar el rango después de normalizar
+rango_dist <- range(mat_norm)
+print(rango_dist)
+
+# Visualizar la matriz de distancias normalizada con fviz_dist (VAT)
+plot_vat_sample <- fviz_dist(datos_dist_sample_norm, 
+                             show_labels = FALSE,
+                             gradient = list(low = "#005D8F",    
+                                             mid2 = "#5CC6FF",    
+                                             mid3 = "#FFFFFF",     
+                                             mid4 = "#E01522",    
+                                             high = "#780000")) +  
+  ggtitle("VAT sobre muestra de 1120 observaciones") +
+  theme_minimal() +
+  scale_fill_gradientn(
+    colors = c("#005D8F", "#5CC6FF", "#FFFFFF", "#E01522", "#780000"),
+    values = scales::rescale(c(
+      quantile(mat_norm, 0.01),  
+      quantile(mat_norm, 0.25),  
+      quantile(mat_norm, 0.75),  
+      quantile(mat_norm, 0.99)   
+    )),
+    name = "Distancia"
+  ) +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    axis.text = element_blank(),
+    axis.title = element_blank(),
+    legend.position = "right"
+  )
+
+# Mostrar la gráfica
+print(plot_vat_sample)
+
+
+```
+
+
+
+#' ## Método del Codo para determinar número óptimo de clusters
+```{r}
+set.seed(123)
+elbow_plot <- fviz_nbclust(df_numeric, kmeans, method = "wss") +
+  labs(subtitle = "Método del Codo")
+print(elbow_plot)
+```
+#' ## Calcular el WSS para distintos números de clusters
+```{r}
+set.seed(123)
+wss <- numeric(10)
+for (i in 1:10) {
+  km_tmp <- kmeans(df_numeric, centers = i, nstart = 25)
+  wss[i] <- sum(km_tmp$withinss)
+}
+plot(1:10, wss, type = "b", 
+     xlab = "Número de Clústeres", 
+     ylab = "Suma de cuadrados intra-grupo",
+     main = "Gráfica del Codo")
+```
+`
+#' ## Aplicación de K-means con 4 clusters
+```{r}
+set.seed(123)
+km <- kmeans(df_numeric, centers = 4, iter.max = 100, nstart = 25)
+movies_clean_transformed$grupo <- km$cluster
+print(km)
+```
+#' ## Visualización de Clusters
+```{r}
+set.seed(123)
+n_sample <- 85
+idx <- sample(seq_len(nrow(df_numeric)), n_sample)
+df_sub <- df_numeric[idx, ]
+km_sub <- kmeans(df_sub, centers = 4, nstart = 25)
+fviz_cluster(km_sub, data = df_sub, geom = "point", ellipse.type = "norm", main = "Visualización de Clusters")
+```
+
+```{r}
+set.seed(123)
+idx <- sample(seq_len(nrow(df_numeric)), 45)
+df_sub <- df_numeric[idx, ]
+clusters_sub <- km$cluster[idx]
+plotcluster(as.matrix(df_sub), 
+            clusters_sub, 
+            method = "dc", 
+            clnum = TRUE, 
+            main = "Ubicación de los Clusters")
+```
+#' ## Analisis de los grupos
+
+```{r}
+km <- kmeans(df_numeric, centers = 4, iter.max = 100, nstart = 25)
+
+
+km$size
+km$withinss
+```
+
+#' ## cardinalidad vs magnitud
+```{r}
+
+m <- data.frame(
+  withinss = km$withinss,
+  size     = km$size,
+  cluster  = factor(seq_along(km$size))  # Identificar el número de cluster
+)
+
+# Graficar cardinalidad vs. magnitud
+ggplot(m, aes(x = size, y = withinss)) +
+  geom_point(size = 3) +
+  geom_smooth(method = "lm", se = TRUE, color = "blue") +
+  geom_text_repel(aes(label = cluster), color = "black") +
+  labs(
+    x = "Cardinalidad (size)",
+    y = "Magnitud (withinss)",
+    title = "Cardinalidad vs. Magnitud de los Clusters"
+  ) +
+  theme_minimal()
+
+```
+
+#' ### Gráfica de pares
+
+```{r}
+
+# Verificar si la columna "grupo" existe; de lo contrario, crearla con un valor predeterminado
+if(!"grupo" %in% names(movies_clean_transformed)){
+  movies_clean_transformed$grupo <- factor(rep("A", nrow(movies_clean_transformed)))
+} else {
+  if(length(movies_clean_transformed$grupo) != nrow(movies_clean_transformed)){
+    stop("La columna 'grupo' no tiene la longitud correcta.")
+  }
+  movies_clean_transformed$grupo <- as.factor(movies_clean_transformed$grupo)
+}
+df_plot1 <- movies_clean_transformed[, c("budget_log", "revenue_log", "popularity_log", "grupo")]
+ggpairs(df_plot1, aes(color = grupo), progress = FALSE) +
+  ggtitle("Grafico de Pares - Grupo 1")
+df_plot2 <- movies_clean_transformed[, c("voteAvg", "actorsPopularity", "runtime", "grupo")]
+ggpairs(df_plot2, aes(color = grupo), progress = FALSE) +
+  ggtitle("Grafico de Pares - Grupo 2")
+```
+#' ## Metodo de La silueta K-Means
+```{r}
+set.seed(123)
+
+# Tomar muestra del conjunto de datos
+n_sample <- 85
+df_sample <- df_numeric %>% sample_n(n_sample)
+
+# Aplicar k-means sobre la muestra
+km <- kmeans(df_sample, centers = 4, iter.max = 100, nstart = 25)
+library(cluster)
+silkm <- silhouette(km$cluster, dist(df_sample))
+silhouette_promedio <- mean(silkm[, 3])
+cat("Silhouette promedio:", silhouette_promedio, "\n")
+
+plot(silkm, cex.names = 0.25, col = 1:7, main = " Silueta - Muestra fija")
+```
+
+
+#' ## Clustering Jerárquico
+```{r}
+# Calcular la matriz de distancias
+datos_dist <- dist(df_numeric, method = "euclidean")
+
+# Realizar el agrupamiento jerárquico
+hc <- hclust(datos_dist, method = "ward.D2")
+
+# Visualizar el dendrograma
+plot(hc, main = "Dendrograma - Clustering Jerarquico", xlab = "", sub = "", cex = 0.6)
+rect.hclust(hc, k = 4, border = "red")
+fviz_dend(hc, k = 4, rect = TRUE, cex = 0.5)
+
+# Cortar el dendrograma para asignar grupos
+groups_hc <- cutree(hc, k = 4)
+movies_clean_transformed$grupo_hc <- groups_hc
+
+# Mostrar la tabla de frecuencias de los grupos
+table(movies_clean_transformed$grupo_hc)
+
+# Calcular la media por grupo
+aggregate(df_numeric, by = list(grupo_hc = groups_hc), FUN = mean)
+
+# Visualizar el dendrograma horizontal
+fviz_dend(hc, k = 4, horiz = TRUE, cex = 0.5)
+
+# Dendrograma radial
+set.seed(123)
+fviz_dend(hc, k = 4, cex = 0.4, type = "circular", color_labels_by_k = TRUE)
+
+# Dendrograma filogenético
+fviz_dend(hc, k = 4, cex = 0.7, type = "phylogenic", color_labels_by_k = TRUE, repel = TRUE)
+
+# Evaluar la calidad del agrupamiento usando el método de la silueta
+silhc <- silhouette(groups_hc, datos_dist)
+sil_promedio_hc <- mean(silhc[, 3])
+cat("Silhouette promedio (Clustering Jerarquico):", sil_promedio_hc, "\n")
+
+# Visualizar el análisis de la silueta
+plot(silhc, main = "Analisis de la Silueta - Clustering Jerarquico", cex.names = 0.8, col = 1:3)
+```
+
+
+
+
+
+
+

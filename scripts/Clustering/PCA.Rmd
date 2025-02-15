@@ -1,0 +1,107 @@
+#' ---
+#' title: "PCA Analysis"
+#' author: "Rodrigo Mansilla"
+#' date: "2025-02-12"
+#' output: html_document
+#' encoding: UTF-8
+
+#' ---
+
+#' ## Cargar librerías necesarias
+```{r setup, include=FALSE}
+library(tidyverse)      # Manipulación de datos y piping
+library(tidyverse)
+library(hopkins)
+library(fpc)
+library(factoextra)
+library(parallelDist)
+library(ggrepel)
+library(GGally)
+library(flexclust)
+library(data.table)
+library(dplyr)
+library(cluster)
+library(ggplot2)
+
+# Cargar el dataset preprocesado
+movies_clean_transformed <- read.csv("C:/Users/rodri/Documents/Data-Mining/Proyecto 1/data/movies_clean_transformed.csv", 
+                                     stringsAsFactors = FALSE)
+``` 
+
+
+#' ## Estructura del dataset
+```{r}
+# 2. Verificar la estructura y resumen del dataset
+str(movies_clean_transformed)
+cat("Resumen del dataset preprocesado:\n")
+summary(movies_clean_transformed)
+
+```
+
+
+```{r}
+# 3. Revisar la existencia de valores faltantes en todas las variables
+na_por_variable <- colSums(is.na(movies_clean_transformed))
+print(na_por_variable)
+```
+
+```{r}
+vars_numericas <- c("budget", "revenue", "runtime", "actorsPopularity", 
+                    "popularity", "voteAvg", "voteCount", "genresAmount", 
+                    "productionCoAmount", "productionCountriesAmount", 
+                    "actorsAmount", "releaseYear")
+movies_numeric <- movies_clean_transformed[, vars_numericas]
+
+vars_categoricas <- c("productionCompanyCountry", "productionCountry", "originalLanguage", "video")
+movies_categoricas <- movies_clean_transformed[, vars_categoricas]
+
+```
+
+```{r}
+
+table(movies_categoricas$video)
+table(movies_categoricas$originalLanguage)
+melted_data <- melt(movies_numeric)
+ggplot(melted_data, aes(x = value)) +
+  geom_histogram(bins = 30, fill = "#00AFBB", color = "black") +
+  facet_wrap(~variable, scales = "free") +
+  labs(title = "Distribución de Variables Numéricas", x = "Valor", y = "Frecuencia")
+```
+
+```{r}
+# 6. Visualización preliminar: Distribución de las variables numéricas
+# Convertir los datos numéricos a formato largo para graficar
+melted_data <- melt(movies_numeric)
+ggplot(melted_data, aes(x = value)) +
+  geom_histogram(bins = 30, fill = "#00AFBB", color = "black") +
+  facet_wrap(~variable, scales = "free") +
+  labs(title = "Distribución de Variables Numéricas", x = "Valor", y = "Frecuencia")
+
+
+
+```
+
+
+```{r}
+
+vars_numericas <- c("popularity_log", "budget_log", "revenue_log", "runtime", 
+                    "genresAmount", "productionCoAmount", "productionCountriesAmount",
+                    "voteCount_log", "voteAvg", "actorsPopularity", "actorsAmount", "releaseYear")
+movies_numeric <- movies_clean_transformed[, vars_numericas]
+
+# Histogramas: Distribución de cada variable numérica
+melted_data <- melt(movies_numeric)
+ggplot(melted_data, aes(x = value)) +
+  geom_histogram(bins = 30, fill = "#00AFBB", color = "black") +
+  facet_wrap(~variable, scales = "free") +
+  labs(title = "Distribución de Variables Numéricas", x = "Valor", y = "Frecuencia")
+
+# Boxplots: Identificación de outliers en las variables numéricas
+ggplot(melted_data, aes(x = variable, y = value)) +
+  geom_boxplot(fill = "#E7B800") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(title = "Boxplot de Variables Numéricas", x = "Variable", y = "Valor")
+
+
+```
+

@@ -2,13 +2,15 @@
 title: "clustering"
 author: "Rodrigo Mansilla"
 date: "2025-02-12"
-output: word_document
+output: html_document
 ---
 
 ```{r setup}
 library(tidyverse)
 library(knitr)
 library(kableExtra)
+library(rmarkdown)
+library(xfun)
 
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 
@@ -87,7 +89,7 @@ Se mantienen las variables que capturan el perfil cuantitativo de la película y
 
 #### 1.3.2.1 Dataset Original:
 
-```{r initconfig echo = FALSE warning = FALSE}
+```{r initconfig , echo = FALSE, warning = FALSE}
 
 # Lectura del dataset original
 movies <- read.csv("C:/Users/rodri/Documents/Data-Mining/Proyecto 1/data/movies.csv", 
@@ -116,7 +118,7 @@ kable_styling(bootstrap_options = c("striped", "hover"))
 
 #### 1.3.2.2 Dataset Preprocesado:
 
-```{r prerpocs echo = FALSE warning = FALSE}
+```{r prerpocs, echo = FALSE, warning = FALSE}
 # Lectura del dataset preprocesado
 movies_clean_scaled <- read.csv("C:/Users/rodri/Documents/Data-Mining/Proyecto 1/data/movies_clean_scaled.csv",
                               stringsAsFactors = FALSE)
@@ -145,44 +147,54 @@ kable(preprocessed_summary,
 
 #### 1.3.2.3 Variables numericas de reparto :
 
-```{r comparison echo = FALSE warning = FALSE}
-# Crear resumen estadístico detallado
-cast_summary <- movies_clean_scaled %>%
-  select(castWomenAmount, castMenAmount, actorsPopularity) %>%
-  summarise(
-    across(everything(), list(
-      Min = ~min(., na.rm = TRUE),
-      Q1 = ~quantile(., 0.25, na.rm = TRUE),
-      Mediana = ~median(., na.rm = TRUE),
-      Media = ~mean(., na.rm = TRUE),
-      Q3 = ~quantile(., 0.75, na.rm = TRUE),
-      Max = ~max(., na.rm = TRUE),
-      DE = ~sd(., na.rm = TRUE)
-    ))
+```{r comparison , echo = FALSE, warning = FALSE}
+# Verificar si las columnas existen en el conjunto de datos
+required_columns <- c("castWomenAmount", "castMenAmount", "actorsPopularity")
+missing_columns <- setdiff(required_columns, colnames(movies_clean_scaled))
+
+if (length(missing_columns) == 0) {
+  # Crear resumen estadístico detallado
+  cast_summary <- movies_clean_scaled %>%
+    select(all_of(required_columns)) %>%
+    summarise(
+      across(everything(), list(
+        Min = ~min(., na.rm = TRUE),
+        Q1 = ~quantile(., 0.25, na.rm = TRUE),
+        Mediana = ~median(., na.rm = TRUE),
+        Media = ~mean(., na.rm = TRUE),
+        Q3 = ~quantile(., 0.75, na.rm = TRUE),
+        Max = ~max(., na.rm = TRUE),
+        DE = ~sd(., na.rm = TRUE)
+      ))
+    ) %>%
+    pivot_longer(
+      everything(), 
+      names_to = c("Variable", "Estadístico"),
+      names_pattern = "(.+)_(.+)"
+    ) %>%
+    pivot_wider(
+      names_from = Variable,
+      values_from = value
+    )
+  
+  # Crear tabla con formato mejorado
+  kable(
+    cast_summary,
+    caption = "Tabla 3: Análisis Estadístico de las Variables del Reparto",
+    col.names = c("Estadístico", "Cantidad de Mujeres", "Cantidad de Hombres", "Popularidad del Reparto"),
+    align = c('l', 'r', 'r', 'r'),
+    digits = 2,
+    format.args = list(big.mark = ",")
   ) %>%
-  pivot_longer(everything(), 
-               names_to = c("Variable", "Estadístico"),
-               names_pattern = "(.+)_(.+)") %>%
-  pivot_wider(names_from = Variable,
-              values_from = value)
-
-# Crear tabla con formato mejorado
-kable(cast_summary,
-      caption = "Tabla 3: Análisis Estadístico de las Variables del Reparto",
-      col.names = c("Estadístico", 
-                    "Cantidad de Mujeres", 
-                    "Cantidad de Hombres", 
-                    "Popularidad del Reparto"),
-      align = c('l', 'r', 'r', 'r'),
-      digits = 2,
-      format.args = list(big.mark = ","))%>%
-  kable_styling(bootstrap_options = c("striped", "hover"))
-
+    kable_styling(bootstrap_options = c("striped", "hover"))
+} else {
+  cat("Las siguientes columnas faltan en el conjunto de datos: ", paste(missing_columns, collapse = ", "))
+}
 ```
 
 #### 1.3.2.4 Transformaciones de Fecha:
 
-```{r date echo = FALSE warning = FALSE}
+```{r date , echo = FALSE, warning = FALSE}
 # Crear resumen estadístico del año de lanzamiento
 release_summary <- movies_clean %>%
   select(releaseYear) %>%
@@ -208,11 +220,12 @@ kable(release_summary,
       format.args = list(big.mark = ","))%>%
   kable_styling(bootstrap_options = c("striped", "hover"))
 
+
 ```
 
 #### 1.3.2.5 Comparaciones finales:
 
-```{r Dimens  echo = FALSE warning = FALSE}
+```{r Dimens  , echo = FALSE, warning = FALSE}
 comparison <- tibble(
   Dataset = c("Original", "Preprocesado"),
   Observaciones = c(nrow(movies), nrow(movies_clean)),
@@ -255,6 +268,10 @@ Los grupos para el analisis se formaran con las siguientes variables, dado que e
 
 ### 1.5 Tendencia al Agrupamiento
 
-#### 1.5.1 Estadístico de Hopkins
+#### 1.5.1 Estadístico de Hopkins 
+
+```{r hopkins , echo = FALSE, warning = FALSE}
+
+```
 
 #### 1.5.2 VAT(Visual Assessment of cluster Tendency)
